@@ -104,3 +104,88 @@ Script>>>>>>>>>>>>>>
   }, 800); // remove animation/AJAX ke baad chalayein
 
 });
+
+
+
+
+With Dicount On cart
+
+$(document).on('click', '.cart-item[var_id="52722469208384"] cart-remove-button button', async function (e) {
+
+    setTimeout(async function () {
+
+        try {
+
+            const rows = $('tr.cart-item[data-is-vip="true"]');
+
+            for (const row of rows) {
+
+                const $row = $(row);
+
+                const guestVariantId = Number($row.data('guest-variant-id'));
+                const lineKey = $row.data('line-key');
+                const qty = parseInt($row.find('.quantity__input').val()) || 1;
+
+                if (!guestVariantId || !lineKey) {
+                    console.log('Missing guestVariantId or lineKey');
+                    continue;
+                }
+
+                // Remove VIP Item
+                const removeRes = await fetch('/cart/change.js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: lineKey,
+                        quantity: 0
+                    })
+                });
+
+                if (!removeRes.ok) {
+                    console.log('Remove failed');
+                    continue;
+                }
+
+                // Add Guest Item
+                const addRes = await fetch('/cart/add.js', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        items: [{
+                            id: guestVariantId,
+                            quantity: qty
+                        }]
+                    })
+                });
+
+                if (!addRes.ok) {
+                    console.log('Guest add failed');
+                    continue;
+                }
+
+            }
+
+            // Refresh Cart Drawer
+            const sections = await fetch('/?sections=cart-drawer').then(r => r.json());
+
+            const drawer = new DOMParser()
+                .parseFromString(sections['cart-drawer'], 'text/html')
+                .querySelector('cart-drawer');
+
+            if (drawer) {
+                document.querySelector('cart-drawer').innerHTML = drawer.innerHTML;
+            }
+
+        } catch (err) {
+            console.error(err);
+        }
+
+    }, 800);
+
+});
